@@ -1,0 +1,95 @@
+
+from TwitterAPI import TwitterAPI
+
+def getTweet():
+#consumer key, consumer secret, access token, access secret.
+    ckey="xxxxxxxxxxxxxxxxxxxxxx"
+    csecret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    atoken="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    asecret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+    api=TwitterAPI(ckey,csecret,atoken,asecret)
+    r = api.request('search/tweets',{'q':'' ,'geocode':'19.075984,72.877656,1mi'})
+    print(r.status_code)
+    s = []
+    rT= " "
+    print(r)
+    for tweet in r:
+        x = tweet['text'].encode("utf-8")
+        rT += str(x)
+        print(x)
+        print("NEXT=====CHANGE")
+        #w =  b''.join(x).decode("utf-8")
+        fox = open("D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\TweetFeed_loc_mood_rich.txt", "w+")
+        fox.writelines(rT)
+        fox.close()
+
+    twtre = []
+    with open("D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\TweetFeed_loc_mood_rich.txt","r") as f:
+        contents = f.readlines()
+    for line in contents:
+        for c in line.split(" "):
+            twtre.append(c)
+#        s.append(x)
+    #   
+    print(twtre)    
+    #   print (tweet['text'].encode("utf-8"))
+    #    print(tweet['created_at'])
+    #   print(tweet['location'])
+#        print(s)
+    
+
+    return twtre
+
+
+
+def readSentimentList(file_name):
+    ifile = open(file_name, 'r')
+    happy_count_log = {}
+    sad_count_log = {}
+    ifile.readline() #Ignore title row
+    
+    for line in ifile:
+        tokens = line[:-1].split(',')
+        happy_count_log[tokens[0]] = float(tokens[1])
+        sad_count_log[tokens[0]] = float(tokens[2])
+
+    return happy_count_log, sad_count_log
+
+def classifySentiment(words, happy_count_log, sad_count_log):
+    # Get the log-probability of each word under each sentiment
+    happy_count = [happy_count_log[word] for word in words if word in happy_count_log]
+    sad_count = [sad_count_log[word] for word in words if word in sad_count_log]
+    final_happy = sum(happy_count)
+    final_sad = sum(sad_count)
+    print("THE----------------------------------------------------- SUMMMMMMM")
+    print("SAD===========================================",final_sad)
+    print("HAPPY=========================================",final_happy)
+    print("THE----------------------------------------------------- SUMMMMMMM")
+    if(final_sad > final_happy):
+        resp = 'SAD'        
+        return resp , final_happy ,final_sad
+    else:
+        resp = 'HAPPY'
+        
+        return resp, final_happy ,final_sad
+    
+
+def main():
+    # We load in the list of words and their log probabilities
+    happy_count_log, sad_count_log = readSentimentList('D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\rich_sentiment.csv')
+
+    # Here we have tweets which we have already tokenized (turned into an array of words)
+    tweet1 = getTweet()
+#    tweet2 = ['very', 'sad']
+
+    # Calculate the probabilities that the tweets are happy or sad
+    RESP, final_happy ,final_sad = classifySentiment(tweet1, happy_count_log, sad_count_log)
+#    tweet2_happy_prob, tweet2_sad_prob = classifySentiment(tweet2, happy_count_log, sad_count_log)
+    
+    print ("TWEET ANALYSIS (", tweet1, ") is  ========================", RESP)
+    print ("=====================Happy Score",final_happy, "====================Sad Score",final_sad)
+#    print ("The probability that tweet2 (", tweet2, ") is sad is ", tweet2_happy_prob, "and the probability that it is sad is ", tweet2_sad_prob)
+
+if __name__ == '__main__':
+    main()
