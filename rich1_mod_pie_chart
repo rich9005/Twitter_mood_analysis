@@ -1,0 +1,140 @@
+
+from TwitterAPI import TwitterAPI
+import xlsxwriter
+
+def getTweet(tql):
+#consumer key, consumer secret, access token, access secret.
+    ckey="xxxxxxxxxxxxxxxxxxxxx"
+    csecret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    atoken="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    asecret="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    
+    api=TwitterAPI(ckey,csecret,atoken,asecret)
+    r = api.request('search/tweets',{'q':tql})
+    print(r.status_code)
+    s = []
+    rT= " "
+    print(r)
+    for tweet in r:
+        x = tweet['text'].encode("utf-8")
+        rT += str(x)
+        print(x)
+        print("NEXT=====CHANGE")
+        #w =  b''.join(x).decode("utf-8")
+        fox = open("D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\TweetFeed1_x.txt", "w+")
+        fox.writelines(rT)
+        fox.close()
+
+    twtre = []
+    with open("D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\TweetFeed1_x.txt","r") as f:
+        contents = f.readlines()
+    for line in contents:
+        for c in line.split(" "):
+            twtre.append(c)
+#        s.append(x)
+    #   
+    print(twtre)    
+    #   print (tweet['text'].encode("utf-8"))
+    #    print(tweet['created_at'])
+    #   print(tweet['location'])
+#        print(s)
+    
+
+    return twtre
+
+
+
+def readSentimentList(file_name):
+    ifile = open(file_name, 'r')
+    happy_log_probs = {}
+    sad_log_probs = {}
+    ifile.readline() #Ignore title row
+    
+    for line in ifile:
+        tokens = line[:-1].split(',')
+        happy_log_probs[tokens[0]] = float(tokens[1])
+        sad_log_probs[tokens[0]] = float(tokens[2])
+
+    return happy_log_probs, sad_log_probs
+
+def classifySentiment(words, happy_log_probs, sad_log_probs):
+    # Get the log-probability of each word under each sentiment
+    happy_probs = [happy_log_probs[word] for word in words if word in happy_log_probs]
+    sad_probs = [sad_log_probs[word] for word in words if word in sad_log_probs]
+    prob_happy = sum(happy_probs)
+    prob_sad = sum(sad_probs)
+    print("THE----------------------------------------------------- SUMMMMMMM")
+    print("SAD===========================================",prob_sad)
+    print("HAPPY=========================================",prob_happy)
+    print("THE----------------------------------------------------- SUMMMMMMM")
+    if(prob_sad > prob_happy):
+        resp = 'SAD'        
+        return resp , prob_happy ,prob_sad
+    else:
+        resp = 'HAPPY'
+        
+        return resp, prob_happy ,prob_sad
+ 
+
+def createChart(tql,happy,sad):
+    workbook = xlsxwriter.Workbook('D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\Sentiment_pie.xlsx')
+    worksheet = workbook.add_worksheet()
+    bold = workbook.add_format({'bold': 1})
+
+    # Add the worksheet data that the charts will refer to.
+    headings = ['Mood', 'Score']
+    data = [
+        ['Happy', 'SAD' ],
+        [happy,sad],
+    ]
+
+    querytweet = [tql]
+    ChartTitle = "Sentiment Analysis of -->" + tql
+    worksheet.write_row('A1', headings, bold)
+    worksheet.write_column('A2', data[0])
+    worksheet.write_column('B2', data[1])
+
+    chart1 = workbook.add_chart({'type': 'pie'})
+
+    # Configure the series. Note the use of the list syntax to define ranges:
+    chart1.add_series({
+    'name':       'Twitter sentiment Analysis ',
+    'categories': '=Sheet1!$A$2:$A$3',
+    'values':     '=Sheet1!$B$2:$B$3',
+    })
+
+    # Add a title.
+    chart1.set_title({'name': ChartTitle})
+
+    # Set an Excel chart style. Colors with white outline and shadow.
+    chart1.set_style(10)
+
+    # Insert the chart into the worksheet (with an offset).
+    worksheet.insert_chart('C2', chart1, {'x_offset': 25, 'y_offset': 10})
+
+    workbook.close()
+
+def main():
+    # We load in the list of words and their log probabilities
+    happy_log_probs, sad_log_probs = readSentimentList('D:\Class Notes\CMPE-272\\ass3\Twitter sentiment analysis\\rich_sentiment.csv')
+    tql = 'donaldtrump'
+    # Here we have tweets which we have already tokenized (turned into an array of words)
+    tweet1 = getTweet(tql)
+#    tweet2 = ['very', 'sad']
+
+    # Calculate the probabilities that the tweets are happy or sad
+    RESP, prob_happy ,prob_sad = classifySentiment(tweet1, happy_log_probs, sad_log_probs)
+#    tweet2_happy_prob, tweet2_sad_prob = classifySentiment(tweet2, happy_log_probs, sad_log_probs)
+    
+    print ("TWEET ANALYSIS (", tweet1, ") is  ========================", RESP)
+    print ("=====================Happy Score",prob_happy, "====================Sad Score",prob_sad)
+#    print ("The probability that tweet2 (", tweet2, ") is sad is ", tweet2_happy_prob, "and the probability that it is sad is ", tweet2_sad_prob)
+    createChart(tql,prob_happy,prob_sad)
+if __name__ == '__main__':
+    main()
+
+
+
+
+
+
